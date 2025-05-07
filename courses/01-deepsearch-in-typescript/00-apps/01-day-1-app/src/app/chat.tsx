@@ -31,7 +31,7 @@ export const ChatPage = ({ userName }: ChatProps) => {
       },
     });
 
-  console.log({messages});
+  console.log({ messages });
 
   return (
     <>
@@ -45,7 +45,7 @@ export const ChatPage = ({ userName }: ChatProps) => {
           {messages.map((message, index) => (
             <ChatMessage
               key={index}
-              text={message.content}
+              parts={message.parts ?? [{ type: "text", text: message.content }]}
               role={message.role}
               userName={userName}
             />

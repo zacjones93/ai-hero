@@ -1,7 +1,8 @@
 import ReactMarkdown, { type Components } from "react-markdown";
+import type { MessagePart } from "~/types";
 
 interface ChatMessageProps {
-  text: string;
+  parts: MessagePart[];
   role: string;
   userName: string;
 }
@@ -38,7 +39,7 @@ const Markdown = ({ children }: { children: string }) => {
   return <ReactMarkdown components={components}>{children}</ReactMarkdown>;
 };
 
-export const ChatMessage = ({ text, role, userName }: ChatMessageProps) => {
+export const ChatMessage = ({ parts, role, userName }: ChatMessageProps) => {
   const isAI = role === "assistant";
 
   return (
@@ -53,7 +54,37 @@ export const ChatMessage = ({ text, role, userName }: ChatMessageProps) => {
         </p>
 
         <div className="prose prose-invert max-w-none">
-          <Markdown>{text}</Markdown>
+          {parts.map((part, index) => {
+            switch (part.type) {
+              case "text":
+                return <Markdown key={index}>{part.text}</Markdown>;
+              case "tool-invocation":
+                return (
+                  <div
+                    key={index}
+                    className="bg-gray-850 my-4 rounded border border-gray-700 p-3"
+                  >
+                    <p className="text-sm font-medium text-gray-400">
+                      Tool Invocation: {part.toolInvocation.toolName}
+                    </p>
+                    <pre className="mt-1 whitespace-pre-wrap rounded bg-gray-900 p-2 text-xs text-gray-300">
+                      Args: {JSON.stringify(part.toolInvocation.args, null, 2)}
+                    </pre>
+                    {part.toolInvocation.state === "result" &&
+                      part.toolInvocation.result && (
+                        <pre className="mt-2 whitespace-pre-wrap rounded bg-gray-900 p-2 text-xs text-green-400">
+                          Result:{" "}
+                          {JSON.stringify(part.toolInvocation.result, null, 2)}
+                        </pre>
+                      )}
+                  </div>
+                );
+              default:
+                // For now, we'll return null for other part types as per the requirements.
+                // You can hover over MessagePart in your IDE to see all possible types.
+                return null;
+            }
+          })}
         </div>
       </div>
     </div>
