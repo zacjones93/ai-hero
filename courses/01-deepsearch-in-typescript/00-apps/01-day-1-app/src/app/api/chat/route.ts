@@ -21,12 +21,13 @@ export async function POST(request: Request) {
     chatId?: string;
   };
 
-  let { chatId } = body;
-  const { messages: initialMessages } = body; // Rename to initialMessages to avoid conflict
+  const { messages: initialMessages } = body;
+  let effectiveChatId = body.chatId; // Will hold the actual chatId to be used
+  const isChatIdProvidedByClient = !!body.chatId; // True if client sent an ID
 
-  // If chatId is not provided, create a new chat
-  if (!chatId) {
-    chatId = randomUUID();
+  // If chatId is not provided by the client, it's a new chat
+  if (!isChatIdProvidedByClient) {
+    effectiveChatId = randomUUID(); // Generate a new chatId
     const firstUserMessage = initialMessages.find(m => m.role === 'user')?.content;
     const chatTitle = typeof firstUserMessage === 'string'
       ? firstUserMessage.substring(0, 100)
@@ -37,17 +38,24 @@ export async function POST(request: Request) {
     // The AI's response will be added in onFinish.
     await upsertChat({
       userId,
-      chatId,
+      chatId: effectiveChatId, // Use the newly generated chatId
       title: chatTitle,
       messages: initialMessages,
     });
   }
+  // Now, effectiveChatId is guaranteed to be a string (either from client or newly generated)
 
 
   return createDataStreamResponse({
     execute: async (dataStream) => {
-      // const { messages } = body; // messages is now initialMessages
-      // No need to destructure body again, initialMessages is already available.
+      // If it was a new chat creation flow (client didn't provide chatId),
+      // send the NEW_CHAT_CREATED event with the new chatId.
+      if (!isChatIdProvidedByClient) {
+        dataStream.writeData({
+          type: "NEW_CHAT_CREATED",
+          chatId: effectiveChatId!, // effectiveChatId is guaranteed string here
+        });
+      }
 
       const result = streamText({
         model,
@@ -84,18 +92,17 @@ export async function POST(request: Request) {
           });
 
           // Determine title for upsertChat
-          // If it was a new chat, the title was already set.
-          // If it's an existing chat, we can update the title or keep it.
-          // For now, let's try to set the title based on the first user message of the updated set.
           const firstUserMessageContent = updatedMessages.find(m => m.role === 'user')?.content;
           const chatTitle = typeof firstUserMessageContent === 'string'
             ? firstUserMessageContent.substring(0, 100)
-            : "Chat"; // Fallback title
+            // For a new chat, its title was already set. For existing, this updates or sets based on content.
+            : (isChatIdProvidedByClient ? "Chat Update" : (initialMessages.find(m => m.role === 'user')?.content as string || "New Chat").substring(0, 100));
+
 
           await upsertChat({
             userId,
-            chatId: chatId!, // chatId is guaranteed to be defined here
-            title: chatTitle, // Potentially update title, or use existing if preferred
+            chatId: effectiveChatId!, // Use the effective chatId (original or new)
+            title: chatTitle,
             messages: updatedMessages,
           });
         }

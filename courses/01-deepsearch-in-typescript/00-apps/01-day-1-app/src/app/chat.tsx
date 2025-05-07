@@ -5,18 +5,26 @@ import { SignInModal } from "~/components/sign-in-modal";
 import { useChat } from "@ai-sdk/react";
 import { Loader2 } from "lucide-react";
 import { Toaster, toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import type { isNewChatCreated as IsNewChatCreatedType } from "~/types";
+import { isNewChatCreated } from "~/types";
 
-interface ChatProps {
+interface ChatPageProps {
   userName: string;
+  chatId?: string;
 }
 
-export const ChatPage = ({ userName }: ChatProps) => {
+export const ChatPage = ({ userName, chatId }: ChatPageProps) => {
+  const router = useRouter();
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading } =
+  const { messages, input, handleInputChange, handleSubmit, isLoading, data } =
     useChat({
       api: "/api/chat",
+      body: {
+        chatId,
+      },
       onError: (error) => {
         if (
           error.message.includes("Unauthorized") ||
@@ -30,6 +38,15 @@ export const ChatPage = ({ userName }: ChatProps) => {
         }
       },
     });
+
+  useEffect(() => {
+    if (data && data.length > 0) {
+      const lastDataItem = data[data.length - 1];
+      if (isNewChatCreated(lastDataItem)) {
+        router.push(`?id=${lastDataItem.chatId}`);
+      }
+    }
+  }, [data, router]);
 
   console.log({ messages });
 
