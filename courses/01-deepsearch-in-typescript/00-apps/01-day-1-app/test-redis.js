@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { env } from "./src/env.js";
 import Redis from "ioredis";
 
