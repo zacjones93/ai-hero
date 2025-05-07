@@ -4,17 +4,36 @@ import { ChatMessage } from "~/components/chat-message";
 import { SignInModal } from "~/components/sign-in-modal";
 import { useChat } from "@ai-sdk/react";
 import { Loader2 } from "lucide-react";
+import { Toaster, toast } from "sonner";
+import { useState } from "react";
 
 interface ChatProps {
   userName: string;
 }
 
 export const ChatPage = ({ userName }: ChatProps) => {
+  const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
+
   const { messages, input, handleInputChange, handleSubmit, isLoading } =
-    useChat({ api: "/api/chat" });
+    useChat({
+      api: "/api/chat",
+      onError: (error) => {
+        if (
+          error.message.includes("Unauthorized") ||
+          error.message.includes("401")
+        ) {
+          toast.error("Authentication required. Please sign in to chat.");
+          setIsSignInModalOpen(true);
+        } else {
+          toast.error("Oops, an error occurred! Please try again.");
+          console.error("Chat error:", error);
+        }
+      },
+    });
 
   return (
     <>
+      <Toaster richColors position="top-center" />
       <div className="flex flex-1 flex-col">
         <div
           className="mx-auto w-full max-w-[65ch] flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-track-gray-800 scrollbar-thumb-gray-600 hover:scrollbar-thumb-gray-500"
@@ -64,7 +83,10 @@ export const ChatPage = ({ userName }: ChatProps) => {
         </div>
       </div>
 
-      <SignInModal isOpen={false} onClose={() => {}} />
+      <SignInModal
+        isOpen={isSignInModalOpen}
+        onClose={() => setIsSignInModalOpen(false)}
+      />
     </>
   );
 };

@@ -62,6 +62,9 @@ dependencies:
   simple-icons:
     specifier: ^14.5.0
     version: 14.12.3
+  sonner:
+    specifier: ^2.0.3
+    version: 2.0.3(react-dom@18.3.1)(react@18.3.1)
   zod:
     specifier: ^3.23.3
     version: 3.24.4
@@ -6264,6 +6267,16 @@ packages:
     dependencies:
       atomic-sleep: 1.0.0
     dev: true
+
+  /sonner@2.0.3(react-dom@18.3.1)(react@18.3.1):
+    resolution: {integrity: sha512-njQ4Hht92m0sMqqHVDL32V2Oun9W1+PHO9NDv9FHfJjT3JT22IG4Jpo3FPQy+mouRKCXFWO+r67v6MrHX2zeIA==}
+    peerDependencies:
+      react: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
+      react-dom: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
+    dependencies:
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+    dev: false
 
   /source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
