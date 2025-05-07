@@ -80,7 +80,7 @@ const fetchFromSerper = cacheWithRedis(
     }
 
     const json = await response.json();
-
+    console.log(json);
     return json;
   },
 );

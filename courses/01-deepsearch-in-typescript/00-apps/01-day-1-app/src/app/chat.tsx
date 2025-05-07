@@ -31,6 +31,8 @@ export const ChatPage = ({ userName }: ChatProps) => {
       },
     });
 
+  console.log({messages});
+
   return (
     <>
       <Toaster richColors position="top-center" />
