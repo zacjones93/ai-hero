@@ -13,6 +13,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
 import type { InferSelectModel, InferInsertModel } from "drizzle-orm";
+import type { MessagePart } from "~/types";
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -39,6 +40,7 @@ export const users = createTable("user", {
 
 export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
+  chats: many(chats),
 }));
 
 export const accounts = createTable(
@@ -112,6 +114,48 @@ export const verificationTokens = createTable(
   }),
 );
 
+export const chats = createTable("chat", {
+  id: text("id").notNull().primaryKey(),
+  userId: varchar("user_id", { length: 255 })
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+});
+
+export const chatsRelations = relations(chats, ({ one, many }) => ({
+  user: one(users, {
+    fields: [chats.userId],
+    references: [users.id],
+  }),
+  messages: many(messages),
+}));
+
+export const messages = createTable("message", {
+  id: serial("id").primaryKey(),
+  chatId: text("chat_id")
+    .notNull()
+    .references(() => chats.id, { onDelete: "cascade" }),
+  role: text("role").notNull(),
+  parts: json("parts").notNull().$type<MessagePart[] | any[]>(),
+  displayOrder: integer("display_order").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+});
+
+export const messagesRelations = relations(messages, ({ one }) => ({
+  chat: one(chats, {
+    fields: [messages.chatId],
+    references: [chats.id],
+  }),
+}));
+
 export declare namespace DB {
   export type User = InferSelectModel<typeof users>;
   export type NewUser = InferInsertModel<typeof users>;
@@ -126,4 +170,10 @@ export declare namespace DB {
   export type NewVerificationToken = InferInsertModel<
     typeof verificationTokens
   >;
+
+  export type Chat = InferSelectModel<typeof chats>;
+  export type NewChat = InferInsertModel<typeof chats>;
+
+  export type Message = InferSelectModel<typeof messages>;
+  export type NewMessage = InferInsertModel<typeof messages>;
 }
