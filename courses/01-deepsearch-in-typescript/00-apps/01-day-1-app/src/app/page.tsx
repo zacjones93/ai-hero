@@ -3,6 +3,9 @@ import Link from "next/link";
 import { auth } from "~/server/auth/index.ts";
 import { ChatPage } from "./chat.tsx";
 import { AuthButton } from "../components/auth-button.tsx";
+import { getChats, getChat } from "~/server/db/queries.ts";
+import type { Message } from "ai";
+import type { DB } from "~/server/db/schema";
 
 const chats = [
   {
@@ -21,9 +24,28 @@ export default async function HomePage({
   const session = await auth();
   const userName = session?.user?.name ?? "Guest";
   const isAuthenticated = !!session?.user;
+  const { id: chatId } = await searchParams;
 
-  const resolvedSearchParams = await searchParams;
-  const chatIdFromUrl = resolvedSearchParams?.id;
+  // Fetch chats if user is authenticated
+  const chats =
+    isAuthenticated && session.user?.id
+      ? await getChats(session.user.id)
+      : [];
+
+  // Fetch active chat if chatId is present and user is authenticated
+  const activeChat =
+    chatId && isAuthenticated && session.user?.id
+      ? await getChat(chatId, session.user.id)
+      : null;
+
+  // Map the messages to the correct format for useChat
+  const initialMessages =
+    activeChat?.messages.map((msg) => ({
+      id: msg.id.toString(),
+      role: msg.role as "user" | "assistant",
+      parts: msg.parts as Message["parts"],
+      content: "",
+    })) ?? [];
 
   return (
     <div className="flex h-screen bg-gray-950">
@@ -48,9 +70,9 @@ export default async function HomePage({
             chats.map((chat) => (
               <div key={chat.id} className="flex items-center gap-2">
                 <Link
-                  href={`/?chatId=${chat.id}`}
+                  href={`/?id=${chat.id}`}
                   className={`flex-1 rounded-lg p-3 text-left text-sm text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 ${
-                    chat.id === activeChatId
+                    chat.id === chatId
                       ? "bg-gray-700"
                       : "hover:bg-gray-750 bg-gray-800"
                   }`}
@@ -75,7 +97,11 @@ export default async function HomePage({
         </div>
       </div>
 
-      <ChatPage userName={userName} chatId={chatIdFromUrl} />
+      <ChatPage
+        userName={userName}
+        chatId={chatId}
+        initialMessages={initialMessages}
+      />
     </div>
   );
 }

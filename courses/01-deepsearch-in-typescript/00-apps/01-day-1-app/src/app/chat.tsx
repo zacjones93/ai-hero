@@ -9,19 +9,26 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { isNewChatCreated as IsNewChatCreatedType } from "~/types";
 import { isNewChatCreated } from "~/types";
+import type { Message } from "ai";
 
 interface ChatPageProps {
   userName: string;
   chatId?: string;
+  initialMessages: Message[]
 }
 
-export const ChatPage = ({ userName, chatId }: ChatPageProps) => {
+export const ChatPage = ({
+  userName,
+  chatId,
+  initialMessages,
+}: ChatPageProps) => {
   const router = useRouter();
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
 
   const { messages, input, handleInputChange, handleSubmit, isLoading, data } =
     useChat({
       api: "/api/chat",
+      initialMessages,
       body: {
         chatId,
       },
